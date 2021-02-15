@@ -1,0 +1,99 @@
+#!/bin/bash
+
+set -Eeuo pipefail
+trap on_error SIGINT SIGTERM ERR
+
+ScriptFullname=$(readlink -e "$0")
+ScriptName=$(basename "$0")
+TargetFile=""
+
+function show_help ()
+{
+	echo "Usage:"
+	echo "${ScriptName} FILENAME      patch specified kf2 executable"
+	echo "${ScriptName} -h, --help    show help"
+	echo ""
+	echo "Dependencies: dd, readelf, hexdump"
+}
+
+function on_error ()
+{
+	trap - SIGINT SIGTERM ERR
+	echo "Process aborted."
+	restore
+}
+
+function backup ()
+{
+	cp -f "$TargetFile" "$TargetFile.orig"
+}
+
+function restore () 
+{
+	if [[ -e "$TargetFile.orig" ]]; then
+		mv -f "$TargetFile.orig" "$TargetFile"
+		echo "Original executable restored"
+	fi
+}
+
+function real_offset () # $1: offset (hex)
+{
+	local Offset="$1"
+	local LoadAddr=$(
+		readelf -l -W "$TargetFile" | \
+		grep -P 'LOAD\s+0x000000' | \
+		awk '{ print $3 }' | \
+		grep -Po '[1-9a-f][0-9a-f]+')
+	echo $((16#$Offset - 16#$LoadAddr))
+}
+
+function target_addr ()
+{
+	echo $(real_offset $(readelf -s -W "$TargetFile" | \
+		grep -P 'KFGameInfo\w+SetGameUnranked' | \
+		grep -v 'exec' | \
+		head -n 1 | \
+		awk '{ print $2 }' | \
+		grep -Po '[1-9a-f][0-9a-f]+'))
+}
+
+function patched ()
+{
+	local ControlHex=$(
+		hexdump -ve '1/1 "%.2x"' \
+		-s $(target_addr) \
+		-n 1 "$TargetFile")
+	test "$ControlHex" == "c3" 
+}
+
+function apply_patch ()
+{
+	printf '\xc3' | \
+		dd of="$TargetFile" \
+		bs=1 \
+		seek=$(target_addr) \
+		count=1 \
+		conv=notrunc 
+	echo "Successfully patched!"
+}
+
+function main ()
+{
+	if ! [[ -w "$TargetFile" ]]; then
+		echo "Can't write file. Make sure the file exists and it's read/write accessible."
+		exit 1
+	fi
+	
+	if patched; then
+		echo "File already patched - skip."
+		exit 0
+	fi
+	
+	backup && apply_patch
+}
+
+if [[ $# -eq 0 ]]; then show_help; exit 0; fi
+case $1 in
+	  -h|--help ) show_help      ;      ;;
+	    *       ) TargetFile="$1"; main ;;
+esac
