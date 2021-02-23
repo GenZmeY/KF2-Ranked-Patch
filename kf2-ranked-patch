@@ -6,12 +6,13 @@ trap on_error SIGINT SIGTERM ERR
 ScriptFullname=$(readlink -e "$0")
 ScriptName=$(basename "$0")
 TargetFile=""
+BackupFile=""
 
 function show_help ()
 {
 	echo "Usage:"
-	echo "${ScriptName} FILENAME      patch specified kf2 executable"
-	echo "${ScriptName} -h, --help    show help"
+	echo "${ScriptName} FILENAME [BACKUPNAME]    patch specified kf2 executable"
+	echo "${ScriptName} -h, --help               show help"
 	echo ""
 	echo "Dependencies: dd, readelf, hexdump"
 }
@@ -25,13 +26,19 @@ function on_error ()
 
 function backup ()
 {
-	cp -f "$TargetFile" "$TargetFile.orig"
+	if [[ -z "$BackupFile" ]]; then
+		BackupFile="$TargetFile.orig"
+	fi
+	cp -f "$TargetFile" "$BackupFile"
 }
 
 function restore () 
 {
-	if [[ -e "$TargetFile.orig" ]]; then
-		mv -f "$TargetFile.orig" "$TargetFile"
+	if [[ -z "$BackupFile" ]]; then
+		BackupFile="$TargetFile.orig"
+	fi
+	if [[ -e "$BackupFile" ]]; then
+		mv -f "$BackupFile" "$TargetFile"
 		echo "Original executable restored"
 	fi
 }
@@ -95,5 +102,5 @@ function main ()
 if [[ $# -eq 0 ]]; then show_help; exit 0; fi
 case $1 in
 	  -h|--help ) show_help      ;      ;;
-	    *       ) TargetFile="$1"; main ;;
+	    *       ) TargetFile="$1"; BackupFile="$2"; main ;;
 esac
