@@ -8,6 +8,11 @@ ScriptName=$(basename "$0")
 TargetFile=""
 BackupFile=""
 
+RxSetGameUnranked='KFGameInfo\w+SetGameUnranked'
+RxValidateForXP='KFGameInfo\w+ValidateForXP'
+
+LoadAddr=''
+
 function show_help ()
 {
 	echo "Usage:"
@@ -43,34 +48,37 @@ function restore ()
 	fi
 }
 
-function real_offset () # $1: offset (hex)
+function set_load_addr () 
 {
-	local Offset="$1"
-	local LoadAddr=$(
+	LoadAddr=$(
 		readelf -l -W "$TargetFile" | \
 		grep -P 'LOAD\s+0x000000' | \
 		awk '{ print $3 }' | \
 		grep -Po '[1-9a-f][0-9a-f]+')
-	echo $((16#$Offset - 16#$LoadAddr))
 }
 
-function target_addr ()
+function target_addr () # $1: TargetRegexp
 {
-	echo $(real_offset $(readelf -s -W "$TargetFile" | \
-		grep -P 'KFGameInfo\w+SetGameUnranked' | \
+	local Offset=$(readelf -s -W "$TargetFile" | \
+		grep -P "$1" | \
 		grep -v 'exec' | \
 		head -n 1 | \
 		awk '{ print $2 }' | \
-		grep -Po '[1-9a-f][0-9a-f]+'))
+		grep -Po '[1-9a-f][0-9a-f]+')
+	echo $((16#$Offset - 16#$LoadAddr))
 }
 
 function patched ()
 {
-	local ControlHex=$(
+	local ControlHexSGU=$(
 		hexdump -ve '1/1 "%.2x"' \
-		-s $(target_addr) \
+		-s $(target_addr "$RxSetGameUnranked") \
 		-n 1 "$TargetFile")
-	test "$ControlHex" == "c3" 
+	local ControlHexVFX=$(
+		hexdump -ve '1/1 "%.2x"' \
+		-s $(target_addr "$RxValidateForXP") \
+		-n 6 "$TargetFile")
+	test "$ControlHexSGU" == "c3" && test "$ControlHexVFX" == "b801000000c3"
 }
 
 function apply_patch ()
@@ -78,9 +86,17 @@ function apply_patch ()
 	printf '\xc3' | \
 		dd of="$TargetFile" \
 		bs=1 \
-		seek=$(target_addr) \
+		seek=$(target_addr "$RxSetGameUnranked") \
 		count=1 \
-		conv=notrunc 
+		conv=notrunc
+
+	printf '\xb8\x01\x00\x00\x00\xc3' | \
+		dd of="$TargetFile" \
+		bs=1 \
+		seek=$(target_addr "$RxValidateForXP") \
+		count=6 \
+		conv=notrunc
+
 	echo "Successfully patched!"
 }
 
@@ -91,16 +107,18 @@ function main ()
 		exit 1
 	fi
 	
+	set_load_addr
+	
 	if patched; then
 		echo "File already patched - skip."
 		exit 0
 	fi
-	
+
 	backup && apply_patch
 }
 
 if [[ $# -eq 0 ]]; then show_help; exit 0; fi
 case $1 in
 	  -h|--help ) show_help      ;      ;;
-	    *       ) TargetFile="$1"; BackupFile="$2"; main ;;
+	    *       ) TargetFile="$1"; BackupFile="${2-}"; main ;;
 esac
