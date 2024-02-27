@@ -11,10 +11,10 @@ If this is a problem for you, use [SafeMutLoader](https://github.com/GenZmeY/KF2
 - Killing Floor 2 server.
 
 ## Usage
-- install dependencies (dd, readelf, hexdump) using your OS's package manager
-- copy [kf2-ranked-patch](kf2-ranked-patch) to your server
-- make it executable: `chmod +x kf2-ranked-patch`
-- run it like this: `./kf2-ranked-patch <path_to_KFGameSteamServer.bin.x86_64>`
+1. install dependencies (dd, readelf, hexdump) using your OS's package manager;
+2. copy [kf2-ranked-patch](kf2-ranked-patch) to your server;
+3. make it executable: `chmod +x kf2-ranked-patch`;
+4. run it like this: `./kf2-ranked-patch <path_to_KFGameSteamServer.bin.x86_64>`.
 
 ## Notes
-- Game updates and integrity checks replace the executable file (`KFGameSteamServer.bin.x86_64`) with original one, so after these events the patch must be applied again
+- Game updates and integrity checks replace the executable file (`KFGameSteamServer.bin.x86_64`) with original one, so after these events the patch must be applied again.
