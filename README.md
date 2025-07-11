@@ -1,5 +1,11 @@
 # KF2-Ranked-Patch
-Makes kf2 server ranked  
+
+[![Downloads](https://img.shields.io/github/downloads/GenZmeY/KF2-Ranked-Patch/total)](https://github.com/GenZmeY/KF2-Ranked-Patch/releases)
+![GitHub Tag](https://img.shields.io/github/v/tag/GenZmeY/KF2-Ranked-Patch)
+[![GitHub](https://img.shields.io/github/license/GenZmeY/KF2-Ranked-Patch)](LICENSE)
+
+## Description
+Makes Killing Floor 2 server ranked  
 
 ## Legal
 Use of this patch violates the [KF2 EULA](https://store.steampowered.com/eula/232090_eula_0) provisions that prohibit disassembling or modifying game files.  
@@ -71,5 +77,9 @@ In the case of Windows, there is no automation and the work to find the necessar
 ## Notes
 - Game updates and integrity checks replace the executable file (`KFGameSteamServer.bin.x86_64` / `KFServer.exe`) with original one, so after these events the patch must be applied again.
 
-## License
-[![license](https://img.shields.io/github/license/GenZmeY/KF2-Ranked-Patch)](LICENSE)
+## Mirrors
+- https://github.com/GenZmeY/KF2-Ranked-Patch  
+- https://codeberg.org/GenZmeY/KF2-Ranked-Patch  
+
+## Copyright & License
+Copyright (c) 2021, 2024 GenZmeY - Released under the [MIT license](LICENSE).
